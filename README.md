@@ -19,10 +19,13 @@ docker compose up --build -d
 - 保费重算：`/m5_calculate`、`/api/m5_calculate`
 - 补退对账：`/m6_reconcile`、`/api/m6_reconcile`
 - 结案归档：`/m7_archive`、`/api/m7_archive`
+- 再保分出调整：`/m8_cession`、`/api/m8_cession`（同步 `/api/m8_cession/sync`、归属 `/api/m8_cession/adjustments/<id>/attribute`、下载 `/api/m8_cession/export.csv`）
 
 ## 核心规则
 
 按保全有效日拆分责任区间，撤销回滚指向原变更；实收补退按日精确分配尾差。完整数值、边界和异常定义见 `docs/DATA-DICTIONARY.md`。
+
+再保分出调整（M8）：原再保账期已关闭时，回原账期重述不可入账（会覆盖原分出记录、改写已关账净额），唯一可入账结果是**当期冲抵**——原账不动，差额作为追溯调整进入本期末结账单，并随调整行保留原账期与更正依据；开放账期可在当期冲抵与原账重述间归属，两种做法跨期净额合计恒等。同一更正重跑不新增调整；归属切换失败保留旧版；原分出记录只追加不覆盖；全部调整归属明确后才允许结案下载，且复核界面与下载共用同一份数据。
 
 ## 验证
 

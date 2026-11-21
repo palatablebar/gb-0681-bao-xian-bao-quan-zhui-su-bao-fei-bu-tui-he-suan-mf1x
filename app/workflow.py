@@ -5,18 +5,24 @@ from app.errors import DomainError
 from app.manifest import identity,manifest
 
 def load(sample):
-    if sample not in ('dirty.csv','clean.csv','legacy.csv'):raise DomainError('SAMPLE','样例名称无效')
+    if sample not in ('dirty.csv','clean.csv','legacy.csv','cession.csv'):raise DomainError('SAMPLE','样例名称无效')
     return (Path(__file__).resolve().parents[1]/'sample_data'/sample).read_bytes()
 
-def run(content,parameters=None,stage=7):
+def run(content,parameters=None,stage=None):
     if len(content)>2_000_000:raise DomainError('SIZE','文件超过2MB',413)
     params=parameters or {}
     if not isinstance(params,dict):raise DomainError('PARAMETERS','参数必须是对象')
+    stage=len(MODULES) if stage is None else stage
     start=time.monotonic();state=None
     for n,entry in enumerate(MODULES,1):
         if n>stage:break
         fn=importlib.import_module('app.modules.'+entry[0]+'.service').execute
         state=fn(content,params) if n==1 else fn(state)
+        if n==1:state['_parameters']=params
+    # m8再保分出调整在归档之后运行：归档就绪态需在全部模块完成后复核，保证待归属调整能挡住结案
+    if stage>=8:
+        from app.modules.m7_archive.service import execute as rearchive
+        state=rearchive(state)
     # Decimal values are serialized as strings before any storage or response.
     state=json.loads(json.dumps(state,default=str,ensure_ascii=False))
     state['run_id']=identity(content,params);state['manifest']=manifest(content,params,time.monotonic()-start)

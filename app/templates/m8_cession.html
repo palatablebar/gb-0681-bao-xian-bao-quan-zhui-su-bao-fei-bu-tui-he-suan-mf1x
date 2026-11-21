@@ -1,0 +1,94 @@
+{% extends "base.html" %}{% block content %}
+<div class="document-grid">
+  <section class="panel wide">
+    <header><h2>再保分出调整裁决</h2><span>调整期间 {{view.current_period}} · {{view.adjustments|length}} 笔</span></header>
+    <div class="actions">
+      <button id="cession-sync" class="primary">同步采信更正至台账</button>
+      <a class="button" href="/api/m8_cession/export.csv">下载再保分出调整CSV</a>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>调整编号</th><th>保单</th><th>原账期</th><th>关闭</th><th>调整期间</th>
+          <th>分出保费调整</th><th>赔款份额调整</th><th>净额调整</th><th>归属去向</th><th>状态</th><th>操作</th>
+        </tr></thead>
+        <tbody>
+        {% for a in view.adjustments %}
+        <tr data-adj="{{a.adj_id}}">
+          <td title="{{a.basis}}">{{a.adj_id}}</td>
+          <td>{{a.policy_id}}</td>
+          <td>{{a.original_period}}</td>
+          <td>{{'是' if a.period_closed else '否'}}</td>
+          <td>{{a.current_period}}</td>
+          <td class="num">{{a.premium_delta}}<br><small>{{a.premium_before}} → {{a.premium_after}}</small></td>
+          <td class="num">{{a.claim_delta}}<br><small>{{a.claim_before}} → {{a.claim_after}}</small></td>
+          <td class="num">{{a.net_delta}}</td>
+          <td title="{{a.rationale}}">{{a.destination_label}}</td>
+          <td class="{{'bad' if a.status=='待归属' else ''}}">{{a.status}}</td>
+          <td class="actions">
+            <button class="attr" data-adj="{{a.adj_id}}" data-dest="current_offset">当期冲抵</button>
+            <button class="attr" data-adj="{{a.adj_id}}" data-dest="original_restatement" {{'disabled' if a.period_closed else ''}}>原账重述</button>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11">无可入账调整</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header><h2>净额守恒（两种做法）</h2></header>
+    <dl>
+      <dt>分出保费调整合计</dt><dd>{{view.summary.premium_delta}} {{view.summary.unit}}</dd>
+      <dt>赔款份额调整合计</dt><dd>{{view.summary.claim_delta}} {{view.summary.unit}}</dd>
+      <dt>净额调整合计</dt><dd>{{view.summary.net_delta}} {{view.summary.unit}}</dd>
+      <dt>当期冲抵净额（入本期）</dt><dd>{{view.summary.current_offset_net}}</dd>
+      <dt>开放账期重述净额</dt><dd>{{view.summary.restatement_net_open}}</dd>
+      <dt>已关账期净额（不可变）</dt><dd>{{view.summary.closed_period_net_immutable}}</dd>
+    </dl>
+    <div class="stamp">{{'跨期净额守恒' if view.summary.net_conserved else '守恒失败'}}</div>
+    <div class="stamp {{'' if view.summary.all_attributed else 'bad'}}">{{'全部调整已归属' if view.summary.all_attributed else '存在待归属调整'}}</div>
+  </section>
+
+  <section class="panel evidence">
+    <header><h2>未入账与隔离证据</h2><span>{{view.quarantine|length}} 笔</span></header>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>行</th><th>ID</th><th>原因</th><th>说明</th></tr></thead>
+        <tbody>
+        {% for q in view.quarantine %}
+        <tr><td class="num">{{q.line}}</td><td>{{q.id}}</td><td class="bad">{{q.code}}</td><td><small>{{q.raw}}</small></td></tr>
+        {% else %}
+        <tr><td colspan="4">无隔离记录</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header><h2>台账版本链（切换失败保留旧版）</h2><span>{{snap.versions|length}} 次变更</span></header>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>调整编号</th><th>版本</th><th>动作</th><th>去向</th></tr></thead>
+        <tbody>
+        {% for v in snap.versions %}
+        <tr><td>{{v.adj_id}}</td><td class="num">v{{v.version}}</td><td>{{v.action}}</td><td>{{v.destination}}</td></tr>
+        {% else %}
+        <tr><td colspan="4">尚无归属变更</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<script>
+'use strict';
+function post(url,payload){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.message);return b;});}
+const syncBtn=document.getElementById('cession-sync');
+if(syncBtn)syncBtn.addEventListener('click',async()=>{try{const b=await post('/api/m8_cession/sync',{});const c=b.created;const fb=document.getElementById('feedback');fb.textContent='同步完成：新增原记录 '+c.originals+'、新增调整 '+c.adjustments+'、幂等跳过 '+c.skipped_duplicates+(c.refused_overwrites?('、拒绝覆盖 '+c.refused_overwrites):'');window.location.reload();}catch(e){document.getElementById('feedback').textContent=e.message;}});
+document.querySelectorAll('button.attr').forEach(btn=>btn.addEventListener('click',async()=>{try{await post('/api/m8_cession/adjustments/'+btn.dataset.adj+'/attribute',{destination:btn.dataset.dest});document.getElementById('feedback').textContent='归属已切换（旧版保留）';window.location.reload();}catch(e){document.getElementById('feedback').textContent=e.message;}});
+</script>
+{% endblock %}

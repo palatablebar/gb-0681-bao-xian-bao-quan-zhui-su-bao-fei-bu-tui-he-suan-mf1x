@@ -13,6 +13,7 @@
 | M5 保费重算 | 查看并复算保费重算 | `/api/m5_calculate` | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py` |
 | M6 补退对账 | 查看并复算补退对账 | `/api/m6_reconcile` | `app/modules/m6_reconcile/compare.py` | `tests/test_reconcile.py` |
 | M7 结案归档 | 查看并复算结案归档 | `/api/m7_archive` | `app/modules/m7_archive/export_out.py` | `tests/test_archive.py` |
+| M8 再保分出调整 | 裁决归属、切换版本、下载再保调整 | `/api/m8_cession` | `app/modules/m8_cession/rules.py`、`ledger.py` | `tests/test_cession.py` |
 
 ## 陷阱登记
 
@@ -29,6 +30,12 @@
 | TRAP-14 | 同版冲突 | 最后覆盖 | 整组隔离 | `app/modules/m2_mapping/rules.py` | `tests/test_mapping.py::test_real_conflict_quarantine` |
 | TRAP-18 | 三种空态 | 除零或伪成功 | 三个错误码 | `app/modules/m1_ingest/reader.py` | `tests/test_ingest.py::test_empty_three_states` |
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
+| TRAP-27 | 关账期重述 | 覆盖原分出记录、改写已关账净额 | 关闭账期只允许当期冲抵，原账不动 | `app/modules/m8_cession/rules.py` | `tests/test_cession.py::test_closed_period_forbids_restatement` |
+| TRAP-28 | 同一更正重跑 | 重复新增调整 | 更正内容哈希定编号，只追加去重 | `app/modules/m8_cession/ledger.py` | `tests/test_cession.py::test_idempotent_rerun_creates_no_new_adjustment` |
+| TRAP-29 | 归属切换失败 | 旧版被覆盖、无法回退 | 版本链+显式事务回滚，旧版保持active | `app/modules/m8_cession/ledger.py` | `tests/test_cession.py::test_switch_failure_keeps_old_version` |
+| TRAP-30 | 原分出记录被改 | 已关账期对账无法解释 | 原记录封存，变更拒绝(409) | `app/modules/m8_cession/ledger.py` | `tests/test_cession.py::test_original_record_never_overwritten` |
+| TRAP-31 | 同源批次重算 | INSERT OR IGNORE吞掉新结论 | UPSERT刷新body保留复核版本 | `app/store.py` | `tests/test_e2e.py::test_run_and_export` |
+| TRAP-32 | 事务中改journal_mode | PRAGMA隐式提交致ROLLBACK失效 | WAL仅建库时设置一次 | `app/modules/m8_cession/ledger.py` | `tests/test_cession.py::test_switch_failure_keeps_old_version` |
 | TRAP-23 | 生效日端点 | 双计生效日 | 半开区间 | `app/modules/m4_segments/rules.py` | `tests/test_segments.py::test_halfopen_conservation` |
 | TRAP-24 | 分币尾差 | 段合计不等 | 最大余额法 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_largest_remainder_conserves` |
 

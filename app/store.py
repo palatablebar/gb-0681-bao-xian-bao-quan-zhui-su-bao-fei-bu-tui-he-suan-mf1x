@@ -12,7 +12,10 @@ def connection():
 
 def save(run_id, body):
     with connection() as db:
-        db.execute('INSERT OR IGNORE INTO runs(id,body) VALUES (?,?)',(run_id,json.dumps(body,ensure_ascii=False)))
+        # 幂等键复用时刷新计算快照，但保留复核版本与签审结论；不能用INSERT OR IGNORE，
+        # 否则同源重算（如再保归属后重跑）的新结论会被旧快照静默吞掉。
+        db.execute('''INSERT INTO runs(id,body,version,decision) VALUES (?,?,1,'待复核')
+            ON CONFLICT(id) DO UPDATE SET body=excluded.body''',(run_id,json.dumps(body,ensure_ascii=False)))
         db.execute("INSERT INTO meta(key,value) VALUES ('latest',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",(run_id,))
     return get(run_id)
 

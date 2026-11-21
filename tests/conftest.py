@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import pytest
 from app.workflow import load,run
+@pytest.fixture(autouse=True)
+def _isolate_db(tmp_path,monkeypatch):
+    monkeypatch.setenv('DB_PATH',str(tmp_path/'isolated.db'))
 @pytest.fixture
 def raw():return load('dirty.csv')
 @pytest.fixture

@@ -34,6 +34,9 @@ def create_app():
     def download(run_id):
         state=store.get(run_id)
         if not state.get('reconcile',{}).get('balanced'):raise DomainError('UNBALANCED','对账未平')
+        cession=state.get('cession',{}).get('summary',{})
+        if cession and not cession.get('all_attributed',True):
+            raise DomainError('PENDING_ATTRIBUTION','存在待归属再保调整，结案下载需全部调整归属明确',409)
         return Response(bundle(state),mimetype='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename=evidence.csv'})
     with app.app_context():
         if not store.history():

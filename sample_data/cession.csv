@@ -1,0 +1,9 @@
+kind,ceded_id,policy_id,period,period_closed,premium_gross,claim_gross,share,admitted,basis,ref_ceded_id,note
+original,C0001,P002,2026-Q2,true,3650.00,0.00,0.30,true,原保单分出基线,,原再保账单
+original,C0002,P005,2026-Q3,true,1825.00,500.00,0.40,true,原保单分出基线,,原再保账单
+original,C0003,P009,2026-Q4,false,2920.00,0.00,0.25,true,原保单分出基线,,本期末结账单
+correction,X0001,P002,2026-Q2,true,4380.00,300.00,0.30,true,保全追溯更正：追溯加保后保费上调并新增赔款,C0001,更正已采信
+correction,X0002,P005,2026-Q3,true,1500.00,620.00,0.40,true,保全追溯更正：责任降低并补录赔款,C0002,更正已采信
+correction,X0003,P009,2026-Q4,false,2555.00,180.00,0.25,true,保全追溯更正：退费冲减与赔款分摊,C0003,开放账期更正
+correction,X0004,P002,2026-Q2,true,9999.00,0.00,0.30,false,更正尚未采信，不得形成调整,C0001,待采信
+correction,X0005,P010,2026-Q1,true,1000.00,0.00,0.30,true,缺少原分出记录的更正,,无法定位原账
