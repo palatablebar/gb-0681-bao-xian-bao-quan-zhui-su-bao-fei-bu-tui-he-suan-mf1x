@@ -89,6 +89,6 @@
 function post(url,payload){return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(async r=>{const b=await r.json();if(!r.ok)throw new Error(b.message);return b;});}
 const syncBtn=document.getElementById('cession-sync');
 if(syncBtn)syncBtn.addEventListener('click',async()=>{try{const b=await post('/api/m8_cession/sync',{});const c=b.created;const fb=document.getElementById('feedback');fb.textContent='同步完成：新增原记录 '+c.originals+'、新增调整 '+c.adjustments+'、幂等跳过 '+c.skipped_duplicates+(c.refused_overwrites?('、拒绝覆盖 '+c.refused_overwrites):'');window.location.reload();}catch(e){document.getElementById('feedback').textContent=e.message;}});
-document.querySelectorAll('button.attr').forEach(btn=>btn.addEventListener('click',async()=>{try{await post('/api/m8_cession/adjustments/'+btn.dataset.adj+'/attribute',{destination:btn.dataset.dest});document.getElementById('feedback').textContent='归属已切换（旧版保留）';window.location.reload();}catch(e){document.getElementById('feedback').textContent=e.message;}});
+document.querySelectorAll('button.attr').forEach(btn=>btn.addEventListener('click',async()=>{try{await post('/api/m8_cession/adjustments/'+btn.dataset.adj+'/attribute',{destination:btn.dataset.dest});document.getElementById('feedback').textContent='归属已切换（旧版保留）';window.location.reload();}catch(e){document.getElementById('feedback').textContent=e.message;}}));
 </script>
 {% endblock %}
